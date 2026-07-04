@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
+import { registerHandlers } from './socketHandlers.js'
 
 const app = express()
 app.use(cors())
@@ -16,13 +17,7 @@ const io = new Server(httpServer, {
 })
 
 io.on('connection', (socket) => {
-  socket.on('ping', () => {
-    socket.emit('pong')
-  })
-
-  socket.on('disconnect', () => {
-    // noop for now
-  })
+  registerHandlers(io, socket)
 })
 
 const PORT = process.env.PORT || 8082
