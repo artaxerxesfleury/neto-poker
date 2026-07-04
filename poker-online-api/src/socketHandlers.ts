@@ -22,12 +22,15 @@ function broadcastGameState(io: Server, roomId: string): void {
     isAllIn: p.isAllIn,
   }))
 
+  const pot = room.players.reduce((sum, p) => sum + p.totalContributed, 0)
+
   const baseState = {
     roomId: room.id,
     status: room.status,
     bettingRound: room.bettingRound,
     communityCards: room.communityCards,
     currentBetLevel: room.currentBetLevel,
+    pot,
     currentTurnPlayerId: room.currentTurnPlayerId,
     lastHandResult: room.lastHandResult,
     players: basePlayers,

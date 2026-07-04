@@ -1,33 +1,29 @@
-import { useEffect, useState } from 'react'
-import { socket } from './socket'
+import { useCallback, useState } from 'react'
+import { LobbyView } from './views/LobbyView'
+import { TableView } from './views/TableView'
 import './App.css'
 
+type Screen = 'lobby' | 'table'
+
 function App() {
-  const [connected, setConnected] = useState(false)
-  const [pongReceived, setPongReceived] = useState(false)
+  const [screen, setScreen] = useState<Screen>('lobby')
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
 
-  useEffect(() => {
-    socket.on('connect', () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
-    socket.on('pong', () => setPongReceived(true))
-
-    return () => {
-      socket.off('connect')
-      socket.off('disconnect')
-      socket.off('pong')
-    }
+  const handleJoined = useCallback((playerId: string) => {
+    setMyPlayerId(playerId)
+    setScreen('table')
   }, [])
 
-  return (
-    <div>
-      <h1>poker-online</h1>
-      <p>Socket status: {connected ? 'connected' : 'disconnected'}</p>
-      <button type="button" onClick={() => socket.emit('ping')} disabled={!connected}>
-        Send ping
-      </button>
-      {pongReceived && <p>pong received</p>}
-    </div>
-  )
+  const handleLeave = useCallback(() => {
+    setMyPlayerId(null)
+    setScreen('lobby')
+  }, [])
+
+  if (screen === 'table' && myPlayerId) {
+    return <TableView myPlayerId={myPlayerId} onLeave={handleLeave} />
+  }
+
+  return <LobbyView onJoined={handleJoined} />
 }
 
 export default App

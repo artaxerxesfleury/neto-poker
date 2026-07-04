@@ -1,0 +1,275 @@
+import { useCallback, useEffect, useState } from 'react'
+import { socket } from '../socket'
+import type { Card, GameState, PlayerView } from '../types'
+
+interface Props {
+  myPlayerId: string
+  onLeave: () => void
+}
+
+function suitSymbol(suit: Card['suit']) {
+  return { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit]
+}
+
+function rankLabel(rank: number) {
+  const face: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }
+  return face[rank] ?? String(rank)
+}
+
+function CardFace({ card }: { card: Card }) {
+  const red = card.suit === 'hearts' || card.suit === 'diamonds'
+  return (
+    <div className={`card ${red ? 'red' : 'black'}`}>
+      <span className="card-rank">{rankLabel(card.rank)}</span>
+      <span className="card-suit">{suitSymbol(card.suit)}</span>
+    </div>
+  )
+}
+
+function CardBack() {
+  return <div className="card back" />
+}
+
+function CardSlot() {
+  return <div className="card placeholder" />
+}
+
+function PlayerSeat({
+  player,
+  isActive,
+  isMe,
+}: {
+  player: PlayerView
+  isActive: boolean
+  isMe: boolean
+}) {
+  return (
+    <div className={['player-seat', isActive && 'active', player.hasFolded && 'folded', isMe && 'me'].filter(Boolean).join(' ')}>
+      <div className="seat-cards">
+        {player.holeCards !== undefined ? (
+          player.holeCards.length > 0 ? (
+            player.holeCards.map((c, i) => <CardFace key={i} card={c} />)
+          ) : (
+            [<CardSlot key={0} />, <CardSlot key={1} />]
+          )
+        ) : (
+          [<CardBack key={0} />, <CardBack key={1} />]
+        )}
+      </div>
+      <div className="seat-info">
+        <span className="seat-name">
+          {player.name}
+          {isMe && ' (You)'}
+        </span>
+        <span className="seat-chips">{player.chips}</span>
+        {player.currentBet > 0 && (
+          <span className="seat-bet">Bet: {player.currentBet}</span>
+        )}
+        {player.isAllIn && <span className="badge allin">ALL-IN</span>}
+        {player.hasFolded && <span className="badge folded-badge">FOLD</span>}
+      </div>
+    </div>
+  )
+}
+
+export function TableView({ myPlayerId, onLeave }: Props) {
+  const [state, setState] = useState<GameState | null>(null)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [showRaise, setShowRaise] = useState(false)
+  const [raiseAmount, setRaiseAmount] = useState(0)
+
+  const handleLeave = useCallback(() => onLeave(), [onLeave])
+
+  useEffect(() => {
+    const onGameState = (gs: GameState) => {
+      setState(gs)
+      setErrorMsg('')
+      setShowRaise(false)
+    }
+    const onError = (e: { message: string }) => setErrorMsg(e.message)
+    const onRoomLeft = () => handleLeave()
+
+    socket.on('game_state', onGameState)
+    socket.on('error', onError)
+    socket.on('room_left', onRoomLeft)
+    return () => {
+      socket.off('game_state', onGameState)
+      socket.off('error', onError)
+      socket.off('room_left', onRoomLeft)
+    }
+  }, [handleLeave])
+
+  if (!state) {
+    return (
+      <div className="table">
+        <p className="loading">Connecting to room…</p>
+      </div>
+    )
+  }
+
+  const me = state.players.find((p) => p.id === myPlayerId)
+  const others = state.players.filter((p) => p.id !== myPlayerId)
+  const isMyTurn = state.currentTurnPlayerId === myPlayerId
+  const actingPlayer = state.players.find((p) => p.id === state.currentTurnPlayerId)
+
+  const callAmount = me ? Math.min(state.currentBetLevel - me.currentBet, me.chips) : 0
+  const canCheck = me ? me.currentBet === state.currentBetLevel : false
+  const canAct = isMyTurn && !!me && !me.hasFolded && !me.isAllIn
+
+  const minRaise = state.currentBetLevel > 0 ? state.currentBetLevel * 2 : 20
+  const maxRaise = me ? me.chips + me.currentBet : 0
+
+  const isShowdown = state.bettingRound === 'showdown'
+  const canStart = state.status === 'waiting' && state.players.length >= 2
+
+  function act(type: string, amount?: number) {
+    socket.emit('player_action', { type, amount })
+  }
+
+  function openRaise() {
+    setRaiseAmount(Math.min(minRaise, maxRaise))
+    setShowRaise(true)
+  }
+
+  return (
+    <div className="table">
+      {/* Header */}
+      <div className="table-header">
+        <span className="header-room">Room {state.roomId.slice(0, 8)}…</span>
+        <span className="header-pot">Pot: {state.pot}</span>
+        <button className="btn-leave" onClick={() => socket.emit('leave_room')}>
+          Leave
+        </button>
+      </div>
+
+      {/* Opponents */}
+      <div className="opponents">
+        {others.length === 0 ? (
+          <p className="waiting-msg">Waiting for players…</p>
+        ) : (
+          others.map((p) => (
+            <PlayerSeat
+              key={p.id}
+              player={p}
+              isActive={state.currentTurnPlayerId === p.id}
+              isMe={false}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Community cards */}
+      <div className="community-area">
+        <div className="community-label">{state.bettingRound.toUpperCase()}</div>
+        <div className="community-cards">
+          {[0, 1, 2, 3, 4].map((i) =>
+            state.communityCards[i] ? (
+              <CardFace key={i} card={state.communityCards[i]} />
+            ) : (
+              <CardSlot key={i} />
+            ),
+          )}
+        </div>
+        {state.currentBetLevel > 0 && (
+          <div className="community-bet">Current bet: {state.currentBetLevel}</div>
+        )}
+      </div>
+
+      {/* Hand result */}
+      {isShowdown && state.lastHandResult && (
+        <div className="hand-result">
+          {state.lastHandResult.pots.map((pot, i) => {
+            const names = pot.winnerIds
+              .map((id) => state.players.find((p) => p.id === id)?.name ?? id)
+              .join(', ')
+            return (
+              <div key={i}>
+                🏆 {names} wins {pot.amount} chips
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Turn indicator */}
+      {state.status === 'playing' && !isShowdown && (
+        <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`}>
+          {isMyTurn ? '🎯 Your turn' : `Waiting for ${actingPlayer?.name ?? '…'}`}
+        </div>
+      )}
+
+      {/* My seat */}
+      {me && (
+        <div className="my-area">
+          <PlayerSeat
+            player={me}
+            isActive={isMyTurn}
+            isMe={true}
+          />
+        </div>
+      )}
+
+      {/* Error */}
+      {errorMsg && <div className="error-msg">{errorMsg}</div>}
+
+      {/* Actions */}
+      <div className="actions">
+        {canStart && (
+          <button className="btn-start" onClick={() => socket.emit('start_game')}>
+            {isShowdown ? '▶ Next Hand' : '▶ Start Game'}
+          </button>
+        )}
+
+        {canAct && (
+          <div className="action-buttons">
+            <button className="btn-fold" onClick={() => act('fold')}>
+              Fold
+            </button>
+            {canCheck ? (
+              <button className="btn-check" onClick={() => act('check')}>
+                Check
+              </button>
+            ) : (
+              <button className="btn-call" onClick={() => act('call')}>
+                Call {callAmount}
+              </button>
+            )}
+            {me && me.chips > callAmount && (
+              <button className="btn-raise" onClick={openRaise}>
+                Raise
+              </button>
+            )}
+            <button className="btn-allin" onClick={() => act('allin')}>
+              All-in
+            </button>
+          </div>
+        )}
+
+        {showRaise && (
+          <div className="raise-panel">
+            <input
+              type="number"
+              value={raiseAmount}
+              min={minRaise}
+              max={maxRaise}
+              step={10}
+              onChange={(e) => setRaiseAmount(Number(e.target.value))}
+            />
+            <button
+              className="btn-confirm-raise"
+              onClick={() => {
+                act('raise', raiseAmount)
+                setShowRaise(false)
+              }}
+            >
+              Confirm
+            </button>
+            <button className="btn-cancel" onClick={() => setShowRaise(false)}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
