@@ -1,8 +1,10 @@
 # Poker Online
 
+*他の言語で読む: [English](README.md), [日本語](README.ja.md)*
+
 リアルタイムマルチプレイヤー テキサスホールデムポーカー — ブラウザ完結、仮想チップのみ。
 
-**[▶ ライブデモ](https://poker-online-three.vercel.app/)** | [English README](./README.md)
+**[ライブデモ](https://poker-online-three.vercel.app/)**
 
 [![CI](https://github.com/haku3782/poker-online/actions/workflows/ci.yml/badge.svg)](https://github.com/haku3782/poker-online/actions/workflows/ci.yml)
 
@@ -24,27 +26,27 @@
 
 ```mermaid
 graph TD
-  subgraph runtime["ランタイム — ユーザーリクエストフロー"]
-    C1["ブラウザ A\nプレイヤー 1"]
-    C2["ブラウザ B\nプレイヤー 2"]
-    API["poker-online-api\nNode.js + Socket.IO\nRender"]
+    subgraph runtime["ランタイム — ユーザーリクエストフロー"]
+        C1["ブラウザ A\nプレイヤー 1"]
+        C2["ブラウザ B\nプレイヤー 2"]
+        API["poker-online-api\nNode.js + Socket.IO\nRender"]
 
-    C1 -- "1 player_action（WebSocket）" --> API
-    API -- "2 バリデーション・ゲーム状態更新" --> API
-    API -- "3 game_state・手札表示あり" --> C1
-    API -- "3 game_state・手札非表示" --> C2
-  end
+        C1 -- "1 player_action（WebSocket）" --> API
+        API -- "2 バリデーション・ゲーム状態更新" --> API
+        API -- "3 game_state・手札表示あり" --> C1
+        API -- "3 game_state・手札非表示" --> C2
+    end
 
-  subgraph cicd["CI / デプロイ"]
-    GH["GitHub · main"]
-    GHA["GitHub Actions\nvitest + vite build"]
-    RND["Render\nAPI 自動デプロイ"]
-    VCL["Vercel\nWeb 自動デプロイ"]
+    subgraph cicd["CI / デプロイ（mainへのPushで実行）"]
+        GH["GitHub · main"]
+        GHA["GitHub Actions\nvitest + vite build"]
+        RND["Render\nAPI 自動デプロイ"]
+        VCL["Vercel\nWeb 自動デプロイ"]
 
-    GH -.-> GHA
-    GH -.-> RND
-    GH -.-> VCL
-  end
+        GH -.-> GHA
+        GH -.-> RND
+        GH -.-> VCL
+    end
 ```
 
 ---
@@ -122,7 +124,7 @@ poker-online/
 | クライアント → サーバー | `list_rooms` | — |
 | サーバー → クライアント | `room_created` | `{ roomId, maxSeats, smallBlind, bigBlind }` |
 | サーバー → クライアント | `room_joined` | `{ roomId, playerId, seat }` |
-| サーバー → クライアント | `game_state` | パーソナライズ済み（下記参照） |
+| サーバー → クライアント | `game_state` | パーソナライズ済み |
 | サーバー → クライアント | `rooms_list` | `RoomSummary[]` |
 | サーバー → クライアント | `error` | `{ message }` |
 

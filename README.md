@@ -1,8 +1,10 @@
 # Poker Online
 
+*Read this in other languages: [English](README.md), [日本語](README.ja.md)*
+
 Real-time multiplayer Texas Hold'em poker — browser-based, virtual chips only.
 
-**[▶ Live Demo](https://poker-online-three.vercel.app/)** | [日本語版 README](./README.ja.md)
+**[Live Demo](https://poker-online-three.vercel.app/)**
 
 [![CI](https://github.com/haku3782/poker-online/actions/workflows/ci.yml/badge.svg)](https://github.com/haku3782/poker-online/actions/workflows/ci.yml)
 
@@ -24,27 +26,27 @@ Real-time multiplayer Texas Hold'em poker — browser-based, virtual chips only.
 
 ```mermaid
 graph TD
-  subgraph runtime["Runtime — User Request Flow"]
-    C1["Browser A\nPlayer 1"]
-    C2["Browser B\nPlayer 2"]
-    API["poker-online-api\nNode.js + Socket.IO\nRender"]
+    subgraph runtime["Runtime — User Request Flow"]
+        C1["Browser A\nPlayer 1"]
+        C2["Browser B\nPlayer 2"]
+        API["poker-online-api\nNode.js + Socket.IO\nRender"]
 
-    C1 -- "1 player_action (WebSocket)" --> API
-    API -- "2 validate & update game state" --> API
-    API -- "3 game_state · holeCards visible" --> C1
-    API -- "3 game_state · holeCards hidden" --> C2
-  end
+        C1 -- "1 player_action (WebSocket)" --> API
+        API -- "2 validate & update game state" --> API
+        API -- "3 game_state · holeCards visible" --> C1
+        API -- "3 game_state · holeCards hidden" --> C2
+    end
 
-  subgraph cicd["CI / Deploy"]
-    GH["GitHub · main"]
-    GHA["GitHub Actions\nvitest + vite build"]
-    RND["Render\nauto-deploy API"]
-    VCL["Vercel\nauto-deploy Web"]
+    subgraph cicd["CI / Deploy (on push to main)"]
+        GH["GitHub · main"]
+        GHA["GitHub Actions\nvitest + vite build"]
+        RND["Render\nauto-deploy API"]
+        VCL["Vercel\nauto-deploy Web"]
 
-    GH -.-> GHA
-    GH -.-> RND
-    GH -.-> VCL
-  end
+        GH -.-> GHA
+        GH -.-> RND
+        GH -.-> VCL
+    end
 ```
 
 ---
