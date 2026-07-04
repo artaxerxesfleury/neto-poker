@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd poker-online-web && npm ci && npm run build",
+  "outputDirectory": "poker-online-web/dist",
+  "framework": null
+}
