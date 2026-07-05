@@ -16,6 +16,14 @@ export function PlayerSeat({ player, isActive, isMe }: Props) {
     isMe && 'me',
   ].filter(Boolean).join(' ')
 
+  const badge = player.isSpectating
+    ? { text: 'WATCHING', cls: 'spectating-badge' }
+    : player.isAllIn
+    ? { text: 'ALL-IN', cls: 'allin' }
+    : player.hasFolded
+    ? { text: 'FOLD', cls: 'folded-badge' }
+    : null
+
   return (
     <div className={classes}>
       <div className="seat-cards">
@@ -32,17 +40,21 @@ export function PlayerSeat({ player, isActive, isMe }: Props) {
         )}
       </div>
       <div className="seat-info">
-        <span className="seat-name">
-          {player.name}
-          {isMe && ' (You)'}
-        </span>
-        <span className="seat-chips">{player.chips}</span>
-        {player.currentBet > 0 && (
-          <span className="seat-bet">Bet: {player.currentBet}</span>
-        )}
-        {player.isSpectating && <span className="badge spectating-badge">WATCHING</span>}
-        {player.isAllIn && <span className="badge allin">ALL-IN</span>}
-        {player.hasFolded && <span className="badge folded-badge">FOLD</span>}
+        <div className="seat-row">
+          <span className="seat-name">{player.name}{isMe && ' (You)'}</span>
+          <span className="seat-chips">{player.chips}</span>
+        </div>
+        <div className="seat-row">
+          <span className="seat-bet" style={{ visibility: player.currentBet > 0 ? 'visible' : 'hidden' }}>
+            Bet: {player.currentBet}
+          </span>
+          <span
+            className={`badge ${badge?.cls ?? 'folded-badge'}`}
+            style={{ visibility: badge ? 'visible' : 'hidden' }}
+          >
+            {badge?.text ?? 'FOLD'}
+          </span>
+        </div>
       </div>
     </div>
   )

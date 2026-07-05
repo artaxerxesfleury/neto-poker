@@ -226,30 +226,28 @@ export function TableView({ myPlayerId, onLeave }: Props) {
           </div>
         )}
 
-        {showRaise && (
-          <div className="raise-panel">
-            <input
-              type="number"
-              value={raiseAmount}
-              min={minRaise}
-              max={maxRaise}
-              step={10}
-              onChange={(e) => setRaiseAmount(Number(e.target.value))}
-            />
-            <button
-              className="btn-confirm-raise"
-              onClick={() => {
-                act('raise', raiseAmount)
-                setShowRaise(false)
-              }}
-            >
-              Confirm
-            </button>
-            <button className="btn-cancel" onClick={() => setShowRaise(false)}>
-              Cancel
-            </button>
-          </div>
-        )}
+        <div className="raise-panel" style={{ visibility: showRaise ? 'visible' : 'hidden' }}>
+          <input
+            type="number"
+            value={raiseAmount}
+            min={minRaise}
+            max={maxRaise}
+            step={10}
+            onChange={(e) => setRaiseAmount(Number(e.target.value))}
+          />
+          <button
+            className="btn-confirm-raise"
+            onClick={() => {
+              act('raise', raiseAmount)
+              setShowRaise(false)
+            }}
+          >
+            Confirm
+          </button>
+          <button className="btn-cancel" onClick={() => setShowRaise(false)}>
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   )

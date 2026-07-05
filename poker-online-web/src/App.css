@@ -346,6 +346,7 @@ button:not(:disabled):hover { opacity: 0.82; }
   background: rgba(0,0,0,0.25);
   transition: border-color 0.2s;
   width: 8rem;
+  height: 8rem;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -357,15 +358,23 @@ button:not(:disabled):hover { opacity: 0.82; }
 
 .seat-info {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
   font-size: 0.78rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  width: 100%;
 }
-.seat-name  { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.seat-chips { color: #60d080; }
-.seat-bet   { color: var(--gold); }
+.seat-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 1.1rem;
+}
+.seat-name  { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 4.5rem; }
+.seat-chips { color: #60d080; white-space: nowrap; }
+.seat-bet   { color: var(--gold); white-space: nowrap; }
 
 .badge {
   font-size: 0.65rem;
@@ -457,7 +466,8 @@ button:not(:disabled):hover { opacity: 0.82; }
 
 /* Status area — fixed height to prevent layout shifts */
 .status-area {
-  min-height: 3.2rem;
+  height: 5.5rem;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -476,7 +486,9 @@ button:not(:disabled):hover { opacity: 0.82; }
   background: var(--felt);
   border-radius: 12px;
   width: 100%;
+  height: 9rem;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 /* Error */
@@ -495,7 +507,9 @@ button:not(:disabled):hover { opacity: 0.82; }
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.25rem 0;
-  min-height: 6rem;
+  height: 7rem;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .btn-start {
