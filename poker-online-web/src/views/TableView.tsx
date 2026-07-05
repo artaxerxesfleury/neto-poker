@@ -1,86 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { socket } from '../socket'
-import type { Card, GameState, PlayerView } from '../types'
+import type { GameState } from '../types'
+import { CardFace, CardSlot } from '../components/Card'
+import { PlayerSeat } from '../components/PlayerSeat'
 
 interface Props {
   myPlayerId: string
   onLeave: () => void
-}
-
-function suitSymbol(suit: Card['suit']) {
-  return { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit]
-}
-
-function rankLabel(rank: number) {
-  const face: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }
-  return face[rank] ?? String(rank)
-}
-
-function CardFace({ card }: { card: Card }) {
-  const red = card.suit === 'hearts' || card.suit === 'diamonds'
-  return (
-    <div className={`card ${red ? 'red' : 'black'}`}>
-      <span className="card-rank">{rankLabel(card.rank)}</span>
-      <span className="card-suit">{suitSymbol(card.suit)}</span>
-    </div>
-  )
-}
-
-function CardBack() {
-  return <div className="card back" />
-}
-
-function CardSlot() {
-  return <div className="card placeholder" />
-}
-
-function PlayerSeat({
-  player,
-  isActive,
-  isMe,
-}: {
-  player: PlayerView
-  isActive: boolean
-  isMe: boolean
-}) {
-  const classes = [
-    'player-seat',
-    isActive && 'active',
-    player.hasFolded && 'folded',
-    player.isSpectating && 'spectating',
-    isMe && 'me',
-  ].filter(Boolean).join(' ')
-
-  return (
-    <div className={classes}>
-      <div className="seat-cards">
-        {player.isSpectating ? (
-          [<CardSlot key={0} />, <CardSlot key={1} />]
-        ) : player.holeCards !== undefined ? (
-          player.holeCards.length > 0 ? (
-            player.holeCards.map((c, i) => <CardFace key={i} card={c} />)
-          ) : (
-            [<CardSlot key={0} />, <CardSlot key={1} />]
-          )
-        ) : (
-          [<CardBack key={0} />, <CardBack key={1} />]
-        )}
-      </div>
-      <div className="seat-info">
-        <span className="seat-name">
-          {player.name}
-          {isMe && ' (You)'}
-        </span>
-        <span className="seat-chips">{player.chips}</span>
-        {player.currentBet > 0 && (
-          <span className="seat-bet">Bet: {player.currentBet}</span>
-        )}
-        {player.isSpectating && <span className="badge spectating-badge">WATCHING</span>}
-        {player.isAllIn && <span className="badge allin">ALL-IN</span>}
-        {player.hasFolded && <span className="badge folded-badge">FOLD</span>}
-      </div>
-    </div>
-  )
 }
 
 export function TableView({ myPlayerId, onLeave }: Props) {
@@ -271,7 +197,7 @@ export function TableView({ myPlayerId, onLeave }: Props) {
       <div className="actions">
         {canStart && (
           <button className="btn-start" onClick={() => socket.emit('start_game')}>
-            {isShowdown ? '▶ Next Hand' : '▶ Start Game'}
+            ▶ Next Hand
           </button>
         )}
 

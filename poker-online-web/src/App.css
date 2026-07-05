@@ -327,7 +327,6 @@ button:not(:disabled):hover { opacity: 0.82; }
   padding: 0.75rem;
   background: var(--felt);
   border-radius: 12px;
-  min-height: 7rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;

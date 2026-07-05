@@ -10,6 +10,7 @@ export function LobbyView({ onJoined }: Props) {
   const [name, setName] = useState('')
   const [rooms, setRooms] = useState<RoomSummary[]>([])
   const [connected, setConnected] = useState(socket.connected)
+  const [errorMsg, setErrorMsg] = useState('')
   const [maxSeats, setMaxSeats] = useState(6)
   const [turnTimeoutMs, setTurnTimeoutMs] = useState(30_000)
   const [smallBlind, setSmallBlind] = useState(10)
@@ -31,12 +32,14 @@ export function LobbyView({ onJoined }: Props) {
     const onRoomJoined = (data: { playerId: string; sessionToken: string }) => {
       onJoined(data.playerId, data.sessionToken)
     }
+    const onError = (e: { message: string }) => setErrorMsg(e.message)
 
     socket.on('connect', onConnect)
     socket.on('disconnect', onDisconnect)
     socket.on('rooms_list', onRoomsList)
     socket.on('room_created', onRoomCreated)
     socket.on('room_joined', onRoomJoined)
+    socket.on('error', onError)
     socket.emit('list_rooms')
 
     return () => {
@@ -45,12 +48,14 @@ export function LobbyView({ onJoined }: Props) {
       socket.off('rooms_list', onRoomsList)
       socket.off('room_created', onRoomCreated)
       socket.off('room_joined', onRoomJoined)
+      socket.off('error', onError)
     }
   }, [onJoined])
 
   const trimmed = name.trim()
 
   function createRoom() {
+    setErrorMsg('')
     socket.emit('create_room', { maxSeats, turnTimeoutMs, smallBlind, bigBlind, defaultStartingChips: startingChips })
   }
 
@@ -147,6 +152,7 @@ export function LobbyView({ onJoined }: Props) {
           + Create Room
         </button>
       </div>
+      {errorMsg && <div className="error-msg">{errorMsg}</div>}
 
       <div className="room-list">
         <h2>Rooms</h2>
@@ -163,7 +169,7 @@ export function LobbyView({ onJoined }: Props) {
               <button
                 className="btn-join"
                 disabled={!trimmed || !connected}
-                onClick={() => socket.emit('join_room', { roomId: room.id, playerName: trimmed })}
+                onClick={() => { setErrorMsg(''); socket.emit('join_room', { roomId: room.id, playerName: trimmed }) }}
               >
                 {room.status === 'playing' ? 'Spectate' : 'Join'}
               </button>
