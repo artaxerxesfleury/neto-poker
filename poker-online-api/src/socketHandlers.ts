@@ -3,8 +3,6 @@ import { applyAction, forfeitPlayer, startHand } from './game/gameEngine.js'
 import type { ActionType } from './game/gameEngine.js'
 import { RoomManager } from './game/room.js'
 
-const TURN_TIMEOUT_MS = 30_000
-
 const manager = new RoomManager()
 
 // socket.id → { roomId, playerId }
@@ -25,6 +23,7 @@ function setTurnTimer(io: Server, roomId: string): void {
   clearTurnTimer(roomId)
   const room = manager.getRoom(roomId)
   if (!room || room.status !== 'playing' || room.bettingRound === 'showdown' || !room.currentTurnPlayerId) return
+  if (room.turnTimeoutMs === 0) return
 
   const playerId = room.currentTurnPlayerId
   const t = setTimeout(() => {
@@ -38,8 +37,12 @@ function setTurnTimer(io: Server, roomId: string): void {
     } catch {
       // hand may have ended between timer set and fire
     }
-  }, TURN_TIMEOUT_MS)
+  }, room.turnTimeoutMs)
   turnTimers.set(roomId, t)
+}
+
+function broadcastRoomsList(io: Server): void {
+  io.emit('rooms_list', manager.listRooms())
 }
 
 function broadcastGameState(io: Server, roomId: string): void {
@@ -54,6 +57,7 @@ function broadcastGameState(io: Server, roomId: string): void {
     currentBet: p.currentBet,
     hasFolded: p.hasFolded,
     isAllIn: p.isAllIn,
+    isSpectating: p.isSpectating,
   }))
 
   const pot = room.players.reduce((sum, p) => sum + p.totalContributed, 0)
@@ -68,6 +72,11 @@ function broadcastGameState(io: Server, roomId: string): void {
     currentTurnPlayerId: room.currentTurnPlayerId,
     lastHandResult: room.lastHandResult,
     players: basePlayers,
+    maxSeats: room.maxSeats,
+    smallBlind: room.smallBlind,
+    bigBlind: room.bigBlind,
+    turnTimeoutMs: room.turnTimeoutMs,
+    defaultStartingChips: room.defaultStartingChips,
   }
 
   // Send personalized state to each socket in this room (hole cards only to owner)
@@ -109,6 +118,7 @@ function handleLeave(io: Server, socket: Socket): void {
   } else {
     clearTurnTimer(info.roomId)
   }
+  broadcastRoomsList(io)
 }
 
 export function registerHandlers(io: Server, socket: Socket): void {
@@ -118,7 +128,13 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
   socket.on(
     'create_room',
-    (options: { maxSeats?: number; smallBlind?: number; bigBlind?: number } = {}) => {
+    (options: {
+      maxSeats?: number
+      smallBlind?: number
+      bigBlind?: number
+      turnTimeoutMs?: number
+      defaultStartingChips?: number
+    } = {}) => {
       try {
         const room = manager.createRoom(options)
         socket.emit('room_created', {
@@ -126,8 +142,11 @@ export function registerHandlers(io: Server, socket: Socket): void {
           maxSeats: room.maxSeats,
           smallBlind: room.smallBlind,
           bigBlind: room.bigBlind,
+          turnTimeoutMs: room.turnTimeoutMs,
+          defaultStartingChips: room.defaultStartingChips,
           status: room.status,
         })
+        broadcastRoomsList(io)
       } catch (err) {
         socket.emit('error', { message: (err as Error).message })
       }
@@ -136,26 +155,25 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
   socket.on(
     'join_room',
-    ({
-      roomId,
-      playerName,
-      startingChips,
-    }: {
-      roomId: string
-      playerName: string
-      startingChips?: number
-    }) => {
+    ({ roomId, playerName }: { roomId: string; playerName: string }) => {
       try {
-        const player = manager.joinRoom(roomId, playerName, startingChips)
+        const player = manager.joinRoom(roomId, playerName)
         socketToPlayer.set(socket.id, { roomId, playerId: player.id })
         socket.join(roomId)
         socket.emit('room_joined', { roomId, playerId: player.id, seat: player.seat })
         broadcastGameState(io, roomId)
+        broadcastRoomsList(io)
       } catch (err) {
         socket.emit('error', { message: (err as Error).message })
       }
     }
   )
+
+  socket.on('request_game_state', () => {
+    const info = socketToPlayer.get(socket.id)
+    if (!info) return
+    broadcastGameState(io, info.roomId)
+  })
 
   socket.on('leave_room', () => {
     handleLeave(io, socket)
@@ -170,6 +188,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       startHand(room)
       broadcastGameState(io, info.roomId)
       setTurnTimer(io, info.roomId)
+      broadcastRoomsList(io)
     } catch (err) {
       socket.emit('error', { message: (err as Error).message })
     }

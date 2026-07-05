@@ -12,11 +12,15 @@
   padding: 0;
 }
 
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   background: var(--felt-dark);
   color: #e8e8e8;
   font-family: system-ui, -apple-system, sans-serif;
-  min-height: 100vh;
 }
 
 button {
@@ -131,11 +135,94 @@ button:not(:disabled):hover { opacity: 0.82; }
 
 .empty { color: #556; font-style: italic; padding: 0.75rem 0; }
 
+/* Room settings panel */
+.room-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  background: #0d2117;
+  border: 1px solid #1e4a35;
+  border-radius: 10px;
+}
+
+.room-settings h2 {
+  font-size: 0.78rem;
+  color: #667;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.1rem;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-row label {
+  width: 7.5rem;
+  font-size: 0.82rem;
+  color: #99a;
+  flex-shrink: 0;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.btn-group button {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  background: #1a3028;
+  color: #778;
+  border: 1px solid #2a4a38;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+.btn-group button.active {
+  background: #1a5c35;
+  color: #cfc;
+  border-color: #2a8a50;
+}
+
+.settings-num {
+  width: 5.5rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 5px;
+  border: 1px solid #2a5a40;
+  background: #0a1a12;
+  color: #e8e8e8;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.settings-num:focus { border-color: var(--gold); }
+
+/* Waiting rules row */
+.waiting-rules {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #778;
+}
+
+.waiting-rules span {
+  padding: 0.25rem 0.6rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
 /* ===== TABLE ===== */
 .table {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  width: 100%;
+  height: 100dvh;
+  height: 100vh; /* fallback */
+  overflow: hidden;
   padding: 0.6rem;
   max-width: 580px;
   margin: 0 auto;
@@ -143,6 +230,69 @@ button:not(:disabled):hover { opacity: 0.82; }
 }
 
 .loading { padding: 2rem; text-align: center; color: #667; }
+
+/* Waiting screen (before game starts) */
+.waiting-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+.waiting-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+.waiting-sub {
+  color: #667;
+  font-size: 0.9rem;
+}
+.waiting-room-id {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+.waiting-room-id code {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255,255,255,0.07);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  color: #e8e8e8;
+  word-break: break-all;
+}
+.waiting-count {
+  font-size: 0.9rem;
+  color: #60d080;
+  font-weight: 600;
+}
+.waiting-player-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  max-width: 260px;
+}
+.waiting-player-list li {
+  padding: 0.4rem 0.75rem;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  color: #ccc;
+}
+.waiting-player-list li.me {
+  background: rgba(240,192,64,0.1);
+  color: var(--gold);
+}
+.waiting-hint {
+  font-size: 0.82rem;
+  color: #556;
+  font-style: italic;
+}
 
 /* Header */
 .table-header {
@@ -152,6 +302,7 @@ button:not(:disabled):hover { opacity: 0.82; }
   padding: 0.4rem 0.75rem;
   background: rgba(0,0,0,0.35);
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .header-room { color: #667; font-size: 0.78rem; }
@@ -177,6 +328,9 @@ button:not(:disabled):hover { opacity: 0.82; }
   background: var(--felt);
   border-radius: 12px;
   min-height: 7rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .waiting-msg { color: rgba(255,255,255,0.35); font-style: italic; font-size: 0.9rem; }
@@ -192,6 +346,9 @@ button:not(:disabled):hover { opacity: 0.82; }
   border: 2px solid transparent;
   background: rgba(0,0,0,0.25);
   transition: border-color 0.2s;
+  width: 8rem;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 .player-seat.active { border-color: var(--gold); }
 .player-seat.folded { opacity: 0.4; }
@@ -207,7 +364,7 @@ button:not(:disabled):hover { opacity: 0.82; }
   flex-wrap: wrap;
   justify-content: center;
 }
-.seat-name  { font-weight: 600; }
+.seat-name  { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seat-chips { color: #60d080; }
 .seat-bet   { color: var(--gold); }
 
@@ -217,8 +374,21 @@ button:not(:disabled):hover { opacity: 0.82; }
   border-radius: 3px;
   font-weight: 700;
 }
-.badge.allin        { background: #903010; color: #fcc; }
-.badge.folded-badge { background: #333; color: #888; }
+.badge.allin           { background: #903010; color: #fcc; }
+.badge.folded-badge    { background: #333; color: #888; }
+.badge.spectating-badge { background: #1a3060; color: #88c; }
+
+.player-seat.spectating { opacity: 0.55; }
+
+.spectating-banner {
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(80,80,180,0.15);
+  border: 1px solid #334;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  color: #99b;
+}
 
 /* Cards */
 .card {
@@ -266,6 +436,8 @@ button:not(:disabled):hover { opacity: 0.82; }
   padding: 0.9rem 1rem;
   background: var(--felt);
   border-radius: 12px;
+  width: 100%;
+  flex-shrink: 0;
 }
 .community-label { font-size: 0.7rem; letter-spacing: 0.12em; color: rgba(255,255,255,0.45); }
 .community-cards { display: flex; gap: 0.35rem; }
@@ -284,6 +456,15 @@ button:not(:disabled):hover { opacity: 0.82; }
   line-height: 1.6;
 }
 
+/* Status area — fixed height to prevent layout shifts */
+.status-area {
+  min-height: 3.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
 /* Turn indicator */
 .turn-indicator { text-align: center; font-size: 0.85rem; color: rgba(255,255,255,0.55); padding: 0.2rem; }
 .turn-indicator.my-turn { color: var(--gold); font-weight: 600; }
@@ -295,6 +476,8 @@ button:not(:disabled):hover { opacity: 0.82; }
   padding: 0.5rem;
   background: var(--felt);
   border-radius: 12px;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 /* Error */
@@ -313,6 +496,7 @@ button:not(:disabled):hover { opacity: 0.82; }
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.25rem 0;
+  min-height: 6rem;
 }
 
 .btn-start {

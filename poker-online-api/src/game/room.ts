@@ -17,10 +17,12 @@ export interface HandResult {
 export interface Room {
   id: string
   maxSeats: number
-  players: Player[]
-  status: RoomStatus
   smallBlind: number
   bigBlind: number
+  turnTimeoutMs: number
+  defaultStartingChips: number
+  players: Player[]
+  status: RoomStatus
 
   deck: Card[]
   communityCards: Card[]
@@ -41,19 +43,25 @@ export interface RoomSummary {
   status: RoomStatus
 }
 
-const DEFAULT_STARTING_CHIPS = 1000
-
 export class RoomManager {
   private rooms = new Map<string, Room>()
 
-  createRoom(options: { maxSeats?: number; smallBlind?: number; bigBlind?: number } = {}): Room {
+  createRoom(options: {
+    maxSeats?: number
+    smallBlind?: number
+    bigBlind?: number
+    turnTimeoutMs?: number
+    defaultStartingChips?: number
+  } = {}): Room {
     const room: Room = {
       id: crypto.randomUUID(),
       maxSeats: options.maxSeats ?? 6,
-      players: [],
-      status: 'waiting',
       smallBlind: options.smallBlind ?? 10,
       bigBlind: options.bigBlind ?? 20,
+      turnTimeoutMs: options.turnTimeoutMs ?? 30_000,
+      defaultStartingChips: options.defaultStartingChips ?? 1000,
+      players: [],
+      status: 'waiting',
       deck: [],
       communityCards: [],
       bettingRound: 'preflop',
@@ -82,7 +90,7 @@ export class RoomManager {
     }))
   }
 
-  joinRoom(roomId: string, playerName: string, startingChips = DEFAULT_STARTING_CHIPS): Player {
+  joinRoom(roomId: string, playerName: string): Player {
     const room = this.rooms.get(roomId)
     if (!room) throw new Error('Room not found')
     if (room.players.length >= room.maxSeats) throw new Error('Room is full')
@@ -91,7 +99,8 @@ export class RoomManager {
     let seat = 0
     while (takenSeats.has(seat)) seat++
 
-    const player = createPlayer(crypto.randomUUID(), playerName, seat, startingChips)
+    const player = createPlayer(crypto.randomUUID(), playerName, seat, room.defaultStartingChips)
+    player.isSpectating = room.status === 'playing'
     room.players.push(player)
     room.players.sort((a, b) => a.seat - b.seat)
     return player

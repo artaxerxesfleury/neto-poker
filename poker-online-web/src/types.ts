@@ -17,6 +17,7 @@ export interface PlayerView {
   currentBet: number
   hasFolded: boolean
   isAllIn: boolean
+  isSpectating: boolean
   holeCards?: Card[]
 }
 
@@ -39,6 +40,11 @@ export interface GameState {
   currentTurnPlayerId: string | null
   lastHandResult: HandResult | null
   players: PlayerView[]
+  maxSeats: number
+  smallBlind: number
+  bigBlind: number
+  turnTimeoutMs: number
+  defaultStartingChips: number
 }
 
 export interface RoomSummary {

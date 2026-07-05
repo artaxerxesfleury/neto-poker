@@ -10,6 +10,11 @@ export function LobbyView({ onJoined }: Props) {
   const [name, setName] = useState('')
   const [rooms, setRooms] = useState<RoomSummary[]>([])
   const [connected, setConnected] = useState(socket.connected)
+  const [maxSeats, setMaxSeats] = useState(6)
+  const [turnTimeoutMs, setTurnTimeoutMs] = useState(30_000)
+  const [smallBlind, setSmallBlind] = useState(10)
+  const [bigBlind, setBigBlind] = useState(20)
+  const [startingChips, setStartingChips] = useState(1000)
   const nameRef = useRef(name)
   nameRef.current = name
 
@@ -45,6 +50,10 @@ export function LobbyView({ onJoined }: Props) {
 
   const trimmed = name.trim()
 
+  function createRoom() {
+    socket.emit('create_room', { maxSeats, turnTimeoutMs, smallBlind, bigBlind, defaultStartingChips: startingChips })
+  }
+
   return (
     <div className="lobby">
       <h1>♠ Poker Online</h1>
@@ -61,25 +70,81 @@ export function LobbyView({ onJoined }: Props) {
           value={name}
           maxLength={20}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && trimmed) socket.emit('create_room', {})
-          }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && trimmed) createRoom() }}
         />
+      </div>
+
+      <div className="room-settings">
+        <h2>Room Settings</h2>
+
+        <div className="settings-row">
+          <label>Max Players</label>
+          <div className="btn-group">
+            {[2, 3, 4, 5, 6].map((n) => (
+              <button
+                key={n}
+                className={maxSeats === n ? 'active' : ''}
+                onClick={() => setMaxSeats(n)}
+              >{n}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label>Turn Timer</label>
+          <div className="btn-group">
+            {[{ label: '15s', ms: 15_000 }, { label: '30s', ms: 30_000 }, { label: '60s', ms: 60_000 }, { label: 'Off', ms: 0 }].map(({ label, ms }) => (
+              <button
+                key={ms}
+                className={turnTimeoutMs === ms ? 'active' : ''}
+                onClick={() => setTurnTimeoutMs(ms)}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label>Small Blind</label>
+          <input
+            type="number"
+            className="settings-num"
+            value={smallBlind}
+            min={1}
+            onChange={(e) => setSmallBlind(Number(e.target.value))}
+          />
+        </div>
+
+        <div className="settings-row">
+          <label>Big Blind</label>
+          <input
+            type="number"
+            className="settings-num"
+            value={bigBlind}
+            min={1}
+            onChange={(e) => setBigBlind(Number(e.target.value))}
+          />
+        </div>
+
+        <div className="settings-row">
+          <label>Starting Chips</label>
+          <input
+            type="number"
+            className="settings-num"
+            value={startingChips}
+            min={100}
+            step={100}
+            onChange={(e) => setStartingChips(Number(e.target.value))}
+          />
+        </div>
       </div>
 
       <div className="lobby-actions">
         <button
           className="btn-primary"
           disabled={!trimmed || !connected}
-          onClick={() => socket.emit('create_room', {})}
+          onClick={createRoom}
         >
           + Create Room
-        </button>
-        <button
-          className="btn-secondary"
-          onClick={() => socket.emit('list_rooms')}
-        >
-          Refresh
         </button>
       </div>
 
@@ -97,10 +162,10 @@ export function LobbyView({ onJoined }: Props) {
               </div>
               <button
                 className="btn-join"
-                disabled={!trimmed || !connected || room.status === 'playing'}
+                disabled={!trimmed || !connected}
                 onClick={() => socket.emit('join_room', { roomId: room.id, playerName: trimmed })}
               >
-                Join
+                {room.status === 'playing' ? 'Spectate' : 'Join'}
               </button>
             </div>
           ))

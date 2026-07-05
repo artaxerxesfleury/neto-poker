@@ -10,6 +10,7 @@ export interface Player {
   totalContributed: number
   hasFolded: boolean
   isAllIn: boolean
+  isSpectating: boolean
   connected: boolean
 }
 
@@ -24,6 +25,7 @@ export function createPlayer(id: string, name: string, seat: number, chips: numb
     totalContributed: 0,
     hasFolded: false,
     isAllIn: false,
+    isSpectating: false,
     connected: true
   }
 }

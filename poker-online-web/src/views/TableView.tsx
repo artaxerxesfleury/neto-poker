@@ -43,10 +43,20 @@ function PlayerSeat({
   isActive: boolean
   isMe: boolean
 }) {
+  const classes = [
+    'player-seat',
+    isActive && 'active',
+    player.hasFolded && 'folded',
+    player.isSpectating && 'spectating',
+    isMe && 'me',
+  ].filter(Boolean).join(' ')
+
   return (
-    <div className={['player-seat', isActive && 'active', player.hasFolded && 'folded', isMe && 'me'].filter(Boolean).join(' ')}>
+    <div className={classes}>
       <div className="seat-cards">
-        {player.holeCards !== undefined ? (
+        {player.isSpectating ? (
+          [<CardSlot key={0} />, <CardSlot key={1} />]
+        ) : player.holeCards !== undefined ? (
           player.holeCards.length > 0 ? (
             player.holeCards.map((c, i) => <CardFace key={i} card={c} />)
           ) : (
@@ -65,6 +75,7 @@ function PlayerSeat({
         {player.currentBet > 0 && (
           <span className="seat-bet">Bet: {player.currentBet}</span>
         )}
+        {player.isSpectating && <span className="badge spectating-badge">WATCHING</span>}
         {player.isAllIn && <span className="badge allin">ALL-IN</span>}
         {player.hasFolded && <span className="badge folded-badge">FOLD</span>}
       </div>
@@ -92,6 +103,8 @@ export function TableView({ myPlayerId, onLeave }: Props) {
     socket.on('game_state', onGameState)
     socket.on('error', onError)
     socket.on('room_left', onRoomLeft)
+    // Guard against the race where game_state fires before this effect runs
+    socket.emit('request_game_state')
     return () => {
       socket.off('game_state', onGameState)
       socket.off('error', onError)
@@ -102,7 +115,50 @@ export function TableView({ myPlayerId, onLeave }: Props) {
   if (!state) {
     return (
       <div className="table">
-        <p className="loading">Connecting to room…</p>
+        <div className="waiting-screen">
+          <p className="waiting-title">Joining room…</p>
+          <p className="waiting-sub">Please wait</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (state.status === 'waiting') {
+    return (
+      <div className="table">
+        <div className="table-header">
+          <span className="header-room">Room {state.roomId.slice(0, 8)}…</span>
+          <button className="btn-leave" onClick={() => socket.emit('leave_room')}>
+            Leave
+          </button>
+        </div>
+        <div className="waiting-screen">
+          <p className="waiting-title">Waiting for players</p>
+          <p className="waiting-room-id">Room ID: <code>{state.roomId}</code></p>
+          <p className="waiting-count">
+            {state.players.length} / {state.maxSeats} players
+          </p>
+          <ul className="waiting-player-list">
+            {state.players.map((p) => (
+              <li key={p.id} className={p.id === myPlayerId ? 'me' : ''}>
+                {p.name}{p.id === myPlayerId ? ' (You)' : ''}
+              </li>
+            ))}
+          </ul>
+          {state.players.length >= 2 && (
+            <button className="btn-start" onClick={() => socket.emit('start_game')}>
+              ▶ Start Game
+            </button>
+          )}
+          <div className="waiting-rules">
+            <span>SB {state.smallBlind} / BB {state.bigBlind}</span>
+            <span>Chips {state.defaultStartingChips}</span>
+            <span>Timer {state.turnTimeoutMs === 0 ? 'Off' : `${state.turnTimeoutMs / 1000}s`}</span>
+          </div>
+          {state.players.length < 2 && (
+            <p className="waiting-hint">Share the Room ID with other players to start.</p>
+          )}
+        </div>
       </div>
     )
   }
@@ -170,33 +226,35 @@ export function TableView({ myPlayerId, onLeave }: Props) {
             ),
           )}
         </div>
-        {state.currentBetLevel > 0 && (
-          <div className="community-bet">Current bet: {state.currentBetLevel}</div>
-        )}
+        <div className="community-bet" style={{ visibility: state.currentBetLevel > 0 ? 'visible' : 'hidden' }}>
+          Current bet: {state.currentBetLevel}
+        </div>
       </div>
 
-      {/* Hand result */}
-      {isShowdown && state.lastHandResult && (
-        <div className="hand-result">
-          {state.lastHandResult.pots.map((pot, i) => {
-            const names = pot.winnerIds
-              .map((id) => state.players.find((p) => p.id === id)?.name ?? id)
-              .join(', ')
-            return (
-              <div key={i}>
-                🏆 {names} wins {pot.amount} chips
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Turn indicator */}
-      {state.status === 'playing' && !isShowdown && (
-        <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`}>
-          {isMyTurn ? '🎯 Your turn' : `Waiting for ${actingPlayer?.name ?? '…'}`}
-        </div>
-      )}
+      {/* Status area — fixed height prevents layout shifts */}
+      <div className="status-area">
+        {isShowdown && state.lastHandResult && (
+          <div className="hand-result">
+            {state.lastHandResult.pots.map((pot, i) => {
+              const names = pot.winnerIds
+                .map((id) => state.players.find((p) => p.id === id)?.name ?? id)
+                .join(', ')
+              return <div key={i}>🏆 {names} wins {pot.amount} chips</div>
+            })}
+          </div>
+        )}
+        {me?.isSpectating && (
+          <div className="spectating-banner">
+            Spectating — you will join at the start of the next hand
+          </div>
+        )}
+        {state.status === 'playing' && !isShowdown && !me?.isSpectating && (
+          <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`}>
+            {isMyTurn ? '🎯 Your turn' : `Waiting for ${actingPlayer?.name ?? '…'}`}
+          </div>
+        )}
+        {errorMsg && <div className="error-msg">{errorMsg}</div>}
+      </div>
 
       {/* My seat */}
       {me && (
@@ -208,9 +266,6 @@ export function TableView({ myPlayerId, onLeave }: Props) {
           />
         </div>
       )}
-
-      {/* Error */}
-      {errorMsg && <div className="error-msg">{errorMsg}</div>}
 
       {/* Actions */}
       <div className="actions">

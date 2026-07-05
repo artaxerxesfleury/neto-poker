@@ -22,11 +22,11 @@ function indexAfter(count: number, index: number): number {
 }
 
 function activePlayers(room: Room): Player[] {
-  return room.players.filter((p) => !p.hasFolded)
+  return room.players.filter((p) => !p.hasFolded && !p.isSpectating)
 }
 
 function playersWhoCanAct(room: Room): Player[] {
-  return room.players.filter((p) => !p.hasFolded && !p.isAllIn)
+  return room.players.filter((p) => !p.hasFolded && !p.isAllIn && !p.isSpectating)
 }
 
 function firstToActAfter(room: Room, afterIndex: number, predicate: (p: Player) => boolean): string {
@@ -55,11 +55,18 @@ function payIntoPot(player: Player, amount: number): void {
 
 function reopenActionAfterRaise(room: Room, raiserId: string): void {
   room.playersToAct = new Set(
-    room.players.filter((p) => p.id !== raiserId && !p.hasFolded && !p.isAllIn).map((p) => p.id)
+    room.players
+      .filter((p) => p.id !== raiserId && !p.hasFolded && !p.isAllIn && !p.isSpectating)
+      .map((p) => p.id)
   )
 }
 
 export function startHand(room: Room): void {
+  // Promote all spectators to active players for this hand
+  for (const player of room.players) {
+    player.isSpectating = false
+  }
+
   const players = seatOrder(room)
   if (players.length < 2) {
     throw new Error('At least 2 players are required to start a hand')
@@ -239,7 +246,7 @@ function endHand(room: Room): void {
 export function forfeitPlayer(room: Room, playerId: string): void {
   if (room.status !== 'playing' || room.bettingRound === 'showdown') return
   const player = room.players.find((p) => p.id === playerId)
-  if (!player || player.hasFolded) return
+  if (!player || player.hasFolded || player.isSpectating) return
 
   player.hasFolded = true
   room.playersToAct.delete(playerId)
