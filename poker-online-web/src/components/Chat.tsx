@@ -12,6 +12,7 @@ interface ChatMessage {
 export const Chat: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,31 +38,44 @@ export const Chat: React.FC = () => {
   };
 
   return (
-    <div className="chat-container">
-      <div className="chat-messages">
-        {messages.map((msg) => (
-          <div key={msg.id} className="chat-message">
-            <span className="chat-sender">{msg.sender}: </span>
-            <span className="chat-text">{msg.text}</span>
+    <>
+      {!isOpen && (
+        <button className="chat-toggle-btn" onClick={() => setIsOpen(true)}>
+          💬 Chat
+        </button>
+      )}
+      {isOpen && (
+        <div className="chat-container">
+          <div className="chat-header">
+            <span>Chat da Mesa</span>
+            <button className="chat-close-btn" onClick={() => setIsOpen(false)}>✕</button>
           </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-      <div className="chat-emojis">
-        {['🤬', '🤑', '😎', '😴', '🍀', '🦈'].map(emoji => (
-          <button key={emoji} type="button" onClick={() => setInput(prev => prev + emoji)}>{emoji}</button>
-        ))}
-      </div>
-      <form className="chat-input-form" onSubmit={sendMessage}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Digite uma mensagem..."
-          maxLength={100}
-        />
-        <button type="submit">Enviar</button>
-      </form>
-    </div>
+          <div className="chat-messages">
+            {messages.map((msg) => (
+              <div key={msg.id} className="chat-message">
+                <span className="chat-sender">{msg.sender}: </span>
+                <span className="chat-text">{msg.text}</span>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="chat-emojis">
+            {['🤬', '🤑', '😎', '😴', '🍀', '🦈'].map(emoji => (
+              <button key={emoji} type="button" onClick={() => setInput(prev => prev + emoji)}>{emoji}</button>
+            ))}
+          </div>
+          <form className="chat-input-form" onSubmit={sendMessage}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Digite uma mensagem..."
+              maxLength={100}
+            />
+            <button type="submit">Enviar</button>
+          </form>
+        </div>
+      )}
+    </>
   );
 };
