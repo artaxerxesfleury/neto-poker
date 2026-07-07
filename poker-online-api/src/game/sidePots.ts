@@ -32,7 +32,7 @@ export function calculateSidePots(players: Player[]): SidePot[] {
 
 // Evaluates each pot's eligible players' best hand, splits ties evenly, and
 // hands any odd leftover chips to the earliest winner(s). Mutates player.chips.
-export function awardPots(pots: SidePot[], players: Player[], communityCards: Card[]): PotResult[] {
+export function awardPots(pots: SidePot[], players: Player[], communityCards: Card[], variant: 'texasholdem' | 'omaha' = 'texasholdem'): PotResult[] {
   const playerById = new Map(players.map((p) => [p.id, p]))
   const results: PotResult[] = []
 
@@ -42,7 +42,7 @@ export function awardPots(pots: SidePot[], players: Player[], communityCards: Ca
 
     const evaluations = eligiblePlayers.map((player) => ({
       player,
-      hand: evaluateHand([...player.holeCards, ...communityCards])
+      hand: evaluateHand(player.holeCards, communityCards, variant)
     }))
 
     let winners = [evaluations[0]]

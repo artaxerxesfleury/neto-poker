@@ -14,8 +14,11 @@ export interface HandResult {
   pots: PotResult[]
 }
 
+export type PokerVariant = 'texasholdem' | 'omaha'
+
 export interface Room {
   id: string
+  variant: PokerVariant
   maxSeats: number
   smallBlind: number
   bigBlind: number
@@ -48,12 +51,14 @@ export class RoomManager {
   private rooms = new Map<string, Room>()
 
   createRoom(options: {
+    variant?: PokerVariant
     maxSeats?: number
     smallBlind?: number
     bigBlind?: number
     turnTimeoutMs?: number
     defaultStartingChips?: number
   } = {}): Room {
+    const variant = options.variant ?? 'texasholdem'
     const maxSeats = options.maxSeats ?? 6
     const smallBlind = options.smallBlind ?? 10
     const bigBlind = options.bigBlind ?? 20
@@ -73,6 +78,7 @@ export class RoomManager {
 
     const room: Room = {
       id: crypto.randomUUID(),
+      variant,
       maxSeats,
       smallBlind,
       bigBlind,

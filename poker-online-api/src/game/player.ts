@@ -13,6 +13,8 @@ export interface Player {
   isSpectating: boolean
   rebuyCount: number
   isReady: boolean
+  isBot?: boolean
+  botPersonality?: 'aggressive' | 'conservative' | 'balanced'
 }
 
 export function createPlayer(id: string, name: string, seat: number, chips: number): Player {
@@ -29,5 +31,6 @@ export function createPlayer(id: string, name: string, seat: number, chips: numb
     isSpectating: false,
     rebuyCount: 0,
     isReady: false,
+    isBot: false,
   }
 }

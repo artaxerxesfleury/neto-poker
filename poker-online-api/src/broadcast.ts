@@ -21,6 +21,8 @@ export function broadcastGameState(io: Server, roomId: string, manager: RoomMana
     isSpectating: p.isSpectating,
     rebuyCount: p.rebuyCount,
     isReady: p.isReady,
+    isBot: p.isBot,
+    botPersonality: p.botPersonality,
   }))
 
   const pot = room.players.reduce((sum, p) => sum + p.totalContributed, 0)

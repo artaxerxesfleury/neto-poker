@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io'
 import { applyAction, forfeitPlayer, startHand } from './game/gameEngine.js'
 import type { ActionType } from './game/gameEngine.js'
+import { calculateBotAction } from './game/botEngine.js'
 import type { RoomManager } from './game/room.js'
 import { broadcastGameState, broadcastRoomsList } from './broadcast.js'
 import {
@@ -28,9 +29,30 @@ function setTurnTimer(io: Server, roomId: string, manager: RoomManager): void {
   clearTurnTimer(roomId)
   const room = manager.getRoom(roomId)
   if (!room || room.status !== 'playing' || room.bettingRound === 'showdown' || !room.currentTurnPlayerId) return
+  
+  const playerId = room.currentTurnPlayerId
+  const player = room.players.find(p => p.id === playerId)
+  
+  if (player?.isBot) {
+    const t = setTimeout(() => {
+      turnTimers.delete(roomId)
+      const r = manager.getRoom(roomId)
+      if (!r || r.currentTurnPlayerId !== playerId) return
+      try {
+        const action = calculateBotAction(r, player)
+        applyAction(r, playerId, action)
+        broadcastGameState(io, roomId, manager)
+        setTurnTimer(io, roomId, manager)
+      } catch (err) {
+        console.error('Bot action error:', err)
+      }
+    }, 1500)
+    turnTimers.set(roomId, t)
+    return
+  }
+
   if (room.turnTimeoutMs === 0) return
 
-  const playerId = room.currentTurnPlayerId
   const t = setTimeout(() => {
     turnTimers.delete(roomId)
     const r = manager.getRoom(roomId)
@@ -111,29 +133,56 @@ export function registerHandlers(io: Server, socket: Socket, manager: RoomManage
     }
   )
 
-  socket.on(
-    'join_room',
-    ({ roomId, playerName }: { roomId: string; playerName: string }) => {
-      try {
-        const player = manager.joinRoom(roomId, playerName)
-
-        const token = crypto.randomUUID()
-        sessionTokens.set(token, { roomId, playerId: player.id })
-        playerToToken.set(playerKey(roomId, player.id), token)
-
-        const room = manager.getRoom(roomId)!
-        if (!room.ownerId) room.ownerId = player.id
-
-        socketToPlayer.set(socket.id, { roomId, playerId: player.id })
-        socket.join(roomId)
-        socket.emit('room_joined', { roomId, playerId: player.id, seat: player.seat, sessionToken: token })
-        broadcastGameState(io, roomId, manager)
-        broadcastRoomsList(io, manager)
-      } catch (err) {
-        socket.emit('error', { message: (err as Error).message })
+  socket.on('join_room', ({ roomId, playerName }: { roomId: string; playerName: string }) => {
+    try {
+      if (socketToPlayer.has(socket.id)) {
+        throw new Error('Socket already in a room')
       }
+      const player = manager.joinRoom(roomId, playerName)
+      
+      const token = crypto.randomUUID()
+      const key = playerKey(roomId, player.id)
+      
+      playerToToken.set(key, token)
+      sessionTokens.set(token, { roomId, playerId: player.id })
+      
+      const room = manager.getRoom(roomId)!
+      if (!room.ownerId) room.ownerId = player.id
+
+      socketToPlayer.set(socket.id, { roomId, playerId: player.id })
+      socket.join(roomId)
+
+      socket.emit('room_joined', { playerId: player.id, sessionToken: token, seat: player.seat })
+      broadcastGameState(io, roomId, manager)
+      broadcastRoomsList(io, manager)
+    } catch (err) {
+      socket.emit('error', { message: (err as Error).message })
     }
-  )
+  })
+
+  socket.on('add_bot', ({ personality }: { personality: 'aggressive' | 'conservative' | 'balanced' }) => {
+    try {
+      const info = socketToPlayer.get(socket.id)
+      if (!info) throw new Error('Not in a room')
+      const room = manager.getRoom(info.roomId)
+      if (!room) throw new Error('Room not found')
+      
+      if (room.players.length >= room.maxSeats) throw new Error('Room is full')
+      if (room.ownerId !== info.playerId) throw new Error('Only the room owner can add bots')
+
+      const botNames = ['Alice (Bot)', 'Bob (Bot)', 'Charlie (Bot)', 'Diana (Bot)', 'Eve (Bot)', 'Frank (Bot)']
+      const randomName = botNames[Math.floor(Math.random() * botNames.length)]
+
+      const bot = manager.joinRoom(info.roomId, randomName)
+      bot.isBot = true
+      bot.botPersonality = personality
+      bot.isReady = true
+
+      broadcastGameState(io, info.roomId, manager)
+    } catch (err) {
+      socket.emit('error', { message: (err as Error).message })
+    }
+  })
 
   socket.on('reconnect_session', ({ token }: { token: string }) => {
     const session = sessionTokens.get(token)
@@ -245,6 +294,26 @@ export function registerHandlers(io: Server, socket: Socket, manager: RoomManage
       setTurnTimer(io, info.roomId, manager)
     } catch (err) {
       socket.emit('error', { message: (err as Error).message })
+    }
+  })
+
+  socket.on('chat_message', ({ text }: { text: string }) => {
+    try {
+      const info = socketToPlayer.get(socket.id)
+      if (!info) return
+      const room = manager.getRoom(info.roomId)
+      if (!room) return
+      const player = room.players.find(p => p.id === info.playerId)
+      if (!player) return
+      
+      io.to(info.roomId).emit('chat_message', {
+        id: crypto.randomUUID(),
+        sender: player.name,
+        text,
+        timestamp: Date.now()
+      })
+    } catch (err) {
+      console.error(err)
     }
   })
 

@@ -20,6 +20,8 @@ export interface PlayerView {
   isSpectating: boolean
   rebuyCount: number
   isReady: boolean
+  isBot?: boolean
+  botPersonality?: 'aggressive' | 'conservative' | 'balanced'
   holeCards?: Card[]
 }
 

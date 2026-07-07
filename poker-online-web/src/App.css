@@ -1,7 +1,7 @@
 :root {
-  --felt: #1a5c35;
-  --felt-dark: #0d2117;
-  --gold: #f0c040;
+  --felt: #0f172a;      /* Slate 900 */
+  --felt-dark: #020617; /* Slate 950 */
+  --gold: #fbbf24;      /* Amber 400 */
   --card-w: 2.5rem;
   --card-h: 3.6rem;
 }
@@ -18,7 +18,7 @@ html, body, #root {
 }
 
 body {
-  background: var(--felt-dark);
+  background: radial-gradient(circle at center, #0a1120 0%, var(--felt-dark) 100%);
   color: #e8e8e8;
   font-family: system-ui, -apple-system, sans-serif;
 }
@@ -361,10 +361,12 @@ button:not(:disabled):hover { opacity: 0.82; }
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  background: var(--felt);
-  border-radius: 16px;
+  background: radial-gradient(circle, #1a362a 0%, #0d1e16 70%, #050b08 100%);
+  border-radius: 40px;
   padding: 0.5rem;
   overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.5);
+  border: 4px solid #1c2722;
 }
 
 /* Top opponents row */
@@ -493,6 +495,12 @@ button:not(:disabled):hover { opacity: 0.82; }
 }
 
 /* Player seat */
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 5px var(--gold); transform: scale(1); }
+  50% { box-shadow: 0 0 18px var(--gold); transform: scale(1.05); }
+  100% { box-shadow: 0 0 5px var(--gold); transform: scale(1); }
+}
+
 .player-seat {
   display: flex;
   flex-direction: column;
@@ -501,16 +509,21 @@ button:not(:disabled):hover { opacity: 0.82; }
   padding: 0.5rem 0.65rem;
   border-radius: 8px;
   border: 2px solid transparent;
-  background: rgba(0,0,0,0.25);
-  transition: border-color 0.2s;
+  background: linear-gradient(145deg, rgba(30,40,50,0.7) 0%, rgba(10,15,20,0.7) 100%);
+  transition: all 0.3s ease;
   width: 8rem;
   height: 9rem;
   flex-shrink: 0;
   overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4);
 }
-.player-seat.active { border-color: var(--gold); }
-.player-seat.folded { opacity: 0.4; }
-.player-seat.me     { background: rgba(0,0,0,0.35); }
+.player-seat.active {
+  border-color: var(--gold);
+  animation: pulse-glow 1.5s infinite;
+  z-index: 10;
+}
+.player-seat.folded { opacity: 0.4; filter: grayscale(50%); }
+.player-seat.me     { background: linear-gradient(145deg, rgba(50,70,90,0.8) 0%, rgba(20,30,40,0.8) 100%); }
 
 .player-seat.compact {
   height: 3rem;
@@ -571,6 +584,11 @@ button:not(:disabled):hover { opacity: 0.82; }
 }
 
 /* Cards */
+@keyframes deal-card {
+  0% { opacity: 0; transform: translateY(-20px) scale(0.8) rotateX(45deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0deg); }
+}
+
 .card {
   display: inline-flex;
   flex-direction: column;
@@ -580,10 +598,16 @@ button:not(:disabled):hover { opacity: 0.82; }
   height: var(--card-h);
   border-radius: 4px;
   background: #fff;
-  border: 1px solid #ccc;
+  border: 1px solid #aaa;
   font-weight: 700;
   user-select: none;
   line-height: 1;
+  box-shadow: 2px 3px 6px rgba(0,0,0,0.6);
+  animation: deal-card 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  transition: transform 0.2s;
+}
+.card:hover {
+  transform: translateY(-5px);
 }
 .card.red   { color: #c00; }
 .card.black { color: #111; }
@@ -613,16 +637,25 @@ button:not(:disabled):hover { opacity: 0.82; }
 .community-bet   { font-size: 0.8rem; color: rgba(255,255,255,0.55); }
 
 /* Hand result */
+@keyframes result-bounce {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .hand-result {
   padding: 0.5rem 0.8rem;
-  background: rgba(240,192,64,0.12);
+  background: radial-gradient(circle, rgba(240,192,64,0.2) 0%, rgba(20,20,10,0.8) 100%);
   border: 1px solid var(--gold);
   border-radius: 8px;
   color: var(--gold);
   font-weight: 600;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   line-height: 1.5;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+  animation: result-bounce 0.5s ease-out;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
 /* Turn indicator */

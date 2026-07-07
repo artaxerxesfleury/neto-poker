@@ -3,6 +3,7 @@ import { socket } from '../socket'
 import type { GameState } from '../types'
 import { CardFace, CardSlot } from '../components/Card'
 import { PlayerSeat } from '../components/PlayerSeat'
+import { Chat } from '../components/Chat'
 
 interface Props {
   myPlayerId: string
@@ -53,23 +54,24 @@ export function TableView({ myPlayerId, onLeave }: Props) {
     return (
       <div className="table">
         <div className="table-header">
-          <span className="header-room">Room {state.roomId.slice(0, 8)}…</span>
+          <span className="header-room">Mesa {state.roomId.slice(0, 5).toUpperCase()}</span>
           <button className="btn-leave" onClick={() => socket.emit('leave_room')}>
-            Leave
+            Sair
           </button>
         </div>
         <div className="waiting-screen">
-          <p className="waiting-title">Waiting for players</p>
-          <p className="waiting-room-id">Room ID: <code>{state.roomId}</code></p>
+          <p className="waiting-title">Aguardando jogadores</p>
+          <p className="waiting-room-id">ID da Mesa: <code>{state.roomId}</code></p>
           <p className="waiting-count">
-            {state.players.length} / {state.maxSeats} players
+            {state.players.length} / {state.maxSeats} jogadores
           </p>
           <ul className="waiting-player-list">
             {state.players.map((p) => (
               <li key={p.id} className={p.id === myPlayerId ? 'me' : ''}>
                 <span className="waiting-player-name">
-                  {p.name}{p.id === myPlayerId ? ' (You)' : ''}
-                  {p.id === state.ownerId && <span className="owner-badge">HOST</span>}
+                  {p.name}{p.id === myPlayerId ? ' (Você)' : ''}
+                  {p.isBot && <span style={{ marginLeft: 6 }}>🤖</span>}
+                  {p.id === state.ownerId && <span className="owner-badge">DONO</span>}
                 </span>
                 {p.id !== state.ownerId && (
                   <span className={`ready-indicator ${p.isReady ? 'ready' : ''}`}>
@@ -87,23 +89,34 @@ export function TableView({ myPlayerId, onLeave }: Props) {
                 className={`btn-ready ${me.isReady ? 'active' : ''}`}
                 onClick={() => socket.emit('set_ready')}
               >
-                {me.isReady ? 'Ready ✓' : 'Ready?'}
+                {me.isReady ? 'Pronto ✓' : 'Pronto?'}
               </button>
             ) : null
           })()}
 
           {myPlayerId === state.ownerId && state.players.length >= 2 && (
             <button className="btn-start" onClick={() => socket.emit('start_game')}>
-              ▶ Start Game
+              ▶ Começar Jogo
             </button>
           )}
+
+          {myPlayerId === state.ownerId && state.players.length < state.maxSeats && (
+            <div className="bot-controls" style={{ marginTop: 20 }}>
+              <p style={{ marginBottom: 10, color: 'var(--gold)' }}>Treinar contra IA:</p>
+              <div className="btn-group">
+                <button onClick={() => socket.emit('add_bot', { personality: 'conservative' })}>🤖 Conservador</button>
+                <button onClick={() => socket.emit('add_bot', { personality: 'balanced' })}>🤖 Balanceado</button>
+                <button onClick={() => socket.emit('add_bot', { personality: 'aggressive' })}>🤖 Agressivo</button>
+              </div>
+            </div>
+          )}
           <div className="waiting-rules">
-            <span>SB {state.smallBlind} / BB {state.bigBlind}</span>
-            <span>Chips {state.defaultStartingChips}</span>
-            <span>Timer {state.turnTimeoutMs === 0 ? 'Off' : `${state.turnTimeoutMs / 1000}s`}</span>
+            <span>Pingo {state.smallBlind} / Pingo Maior {state.bigBlind}</span>
+            <span>Fichas {state.defaultStartingChips}</span>
+            <span>Tempo {state.turnTimeoutMs === 0 ? 'Sem Limite' : `${state.turnTimeoutMs / 1000}s`}</span>
           </div>
           {state.players.length < 2 && (
-            <p className="waiting-hint">Share the Room ID with other players to start.</p>
+            <p className="waiting-hint">Compartilhe o ID da mesa para começar.</p>
           )}
         </div>
       </div>
@@ -140,6 +153,7 @@ export function TableView({ myPlayerId, onLeave }: Props) {
 
   return (
     <div className="table">
+      <Chat />
       {/* Header */}
       <div className="table-header">
         <span className="header-room">Room {state.roomId.slice(0, 8)}…</span>
@@ -188,9 +202,9 @@ export function TableView({ myPlayerId, onLeave }: Props) {
               )}
             </div>
             <div className="community-info">
-              <span className="community-pot">Pot: {state.pot}</span>
+              <span className="community-pot">Pote: {state.pot}</span>
               <span className="community-bet" style={{ visibility: state.currentBetLevel > 0 ? 'visible' : 'hidden' }}>
-                Bet: {state.currentBetLevel}
+                Aposta: {state.currentBetLevel}
               </span>
             </div>
           </div>
@@ -215,18 +229,18 @@ export function TableView({ myPlayerId, onLeave }: Props) {
                 const names = pot.winnerIds
                   .map((id) => state.players.find((p) => p.id === id)?.name ?? id)
                   .join(', ')
-                return <div key={i}>🏆 {names} wins {pot.amount} chips</div>
+                return <div key={i}>🏆 {names} ganhou {pot.amount} fichas</div>
               })}
             </div>
           )}
           {me?.isSpectating && (
             <div className="spectating-banner">
-              Spectating — you will join at the start of the next hand
+              Assistindo — você entrará na próxima mão
             </div>
           )}
           {state.status === 'playing' && !isShowdown && !me?.isSpectating && (
             <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`}>
-              {isMyTurn ? '🎯 Your turn' : `Waiting for ${actingPlayer?.name ?? '…'}`}
+              {isMyTurn ? '🎯 Sua vez' : `Aguardando ${actingPlayer?.name ?? '…'}`}
             </div>
           )}
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
@@ -248,33 +262,33 @@ export function TableView({ myPlayerId, onLeave }: Props) {
       <div className="actions">
         {canStart && (
           <button className="btn-start" onClick={() => socket.emit('start_game')}>
-            ▶ Next Hand
+            ▶ Próxima Mão
           </button>
         )}
 
         {me && me.chips === 0 && (
           <button className="btn-rebuy" onClick={() => socket.emit('rebuy')}>
-            ↩ Rebuy ({state.defaultStartingChips} chips)
+            ↩ Recomprar ({state.defaultStartingChips} fichas)
           </button>
         )}
 
         {canAct && (
           <div className="action-buttons">
             <button className="btn-fold" onClick={() => act('fold')}>
-              Fold
+              Fugir
             </button>
             {canCheck ? (
               <button className="btn-check" onClick={() => act('check')}>
-                Check
+                Mesa
               </button>
             ) : (
               <button className="btn-call" onClick={() => act('call')}>
-                Call {callAmount}
+                Pagar {callAmount}
               </button>
             )}
             {me && me.chips > callAmount && (
               <button className="btn-raise" onClick={openRaise}>
-                Raise
+                Aumentar
               </button>
             )}
             <button className="btn-allin" onClick={() => act('allin')}>
@@ -299,10 +313,10 @@ export function TableView({ myPlayerId, onLeave }: Props) {
               setShowRaise(false)
             }}
           >
-            Confirm
+            Confirmar
           </button>
           <button className="btn-cancel" onClick={() => setShowRaise(false)}>
-            Cancel
+            Cancelar
           </button>
         </div>
       </div>

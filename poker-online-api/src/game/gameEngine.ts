@@ -108,8 +108,9 @@ export function startHand(room: Room, forceSpectating?: Set<string>): void {
   room.currentBetLevel = room.bigBlind
 
   // Deal cards only to active players
+  const numCards = room.variant === 'omaha' ? 4 : 2
   for (const player of active) {
-    player.holeCards = [room.deck.pop()!, room.deck.pop()!]
+    player.holeCards = Array.from({ length: numCards }, () => room.deck.pop()!)
   }
 
   room.playersToAct = playersWhoCanAct(room).map((p) => p.id)
@@ -252,7 +253,7 @@ function finishHandBySingleWinner(room: Room, winner: Player): void {
 
 function finishHandAtShowdown(room: Room): void {
   const pots = calculateSidePots(room.players)
-  const results = awardPots(pots, room.players, room.communityCards)
+  const results = awardPots(pots, room.players, room.communityCards, room.variant)
   room.lastHandResult = { pots: results }
   endHand(room)
 }

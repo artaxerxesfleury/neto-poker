@@ -1,3 +1,5 @@
+import { randomInt } from 'node:crypto'
+
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades'
 
 // 11=J, 12=Q, 13=K, 14=A
@@ -24,7 +26,8 @@ export function createDeck(): Card[] {
 export function shuffle(deck: Card[]): Card[] {
   const result = [...deck]
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    // Cryptographically secure random integer between 0 and i (inclusive)
+    const j = randomInt(0, i + 1)
     ;[result[i], result[j]] = [result[j], result[i]]
   }
   return result

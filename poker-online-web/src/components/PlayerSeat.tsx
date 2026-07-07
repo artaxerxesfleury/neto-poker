@@ -19,11 +19,11 @@ export function PlayerSeat({ player, isActive, isMe, compact }: Props) {
   ].filter(Boolean).join(' ')
 
   const badge = player.isSpectating
-    ? { text: 'WATCHING', cls: 'spectating-badge' }
+    ? { text: 'ESPECTADOR', cls: 'spectating-badge' }
     : player.isAllIn
     ? { text: 'ALL-IN', cls: 'allin' }
     : player.hasFolded
-    ? { text: 'FOLD', cls: 'folded-badge' }
+    ? { text: 'FORA', cls: 'folded-badge' }
     : null
 
   if (compact) {
@@ -42,13 +42,13 @@ export function PlayerSeat({ player, isActive, isMe, compact }: Props) {
           </div>
           <div className="seat-row">
             <span className="seat-bet" style={{ visibility: player.currentBet > 0 ? 'visible' : 'hidden' }}>
-              Bet: {player.currentBet}
+              Aposta: {player.currentBet}
             </span>
             <span
               className={`badge ${badge?.cls ?? 'folded-badge'}`}
               style={{ visibility: badge ? 'visible' : 'hidden' }}
             >
-              {badge?.text ?? 'FOLD'}
+              {badge?.text ?? 'FORA'}
             </span>
           </div>
         </div>
@@ -73,18 +73,18 @@ export function PlayerSeat({ player, isActive, isMe, compact }: Props) {
       </div>
       <div className="seat-info">
         <div className="seat-row">
-          <span className="seat-name">{player.name}{isMe && ' (You)'}</span>
+          <span className="seat-name">{player.name}{isMe && ' (Você)'}</span>
           <span className="seat-chips">{player.chips}</span>
         </div>
         <div className="seat-row">
           <span className="seat-bet" style={{ visibility: player.currentBet > 0 ? 'visible' : 'hidden' }}>
-            Bet: {player.currentBet}
+            Aposta: {player.currentBet}
           </span>
           <span
             className={`badge ${badge?.cls ?? 'folded-badge'}`}
             style={{ visibility: badge ? 'visible' : 'hidden' }}
           >
-            {badge?.text ?? 'FOLD'}
+            {badge?.text ?? 'FORA'}
           </span>
         </div>
         <div className="seat-row">

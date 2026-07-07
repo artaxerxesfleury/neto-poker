@@ -1,0 +1,111 @@
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  height: 250px;
+  background-color: rgba(15, 23, 42, 0.85); /* Slate 900 translucent */
+  border: 1px solid rgba(251, 191, 36, 0.3); /* Gold border */
+  border-radius: 8px;
+  overflow: hidden;
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+.chat-message {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.chat-sender {
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.chat-text {
+  color: #f8fafc;
+}
+
+.chat-emojis {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: rgba(2, 6, 23, 0.9);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.chat-emojis button {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.chat-emojis button:hover {
+  transform: scale(1.2);
+}
+
+.chat-input-form {
+  display: flex;
+  padding: 8px;
+  background-color: rgba(2, 6, 23, 0.9);
+}
+
+.chat-input-form input {
+  flex: 1;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  outline: none;
+  font-size: 0.85rem;
+}
+
+.chat-input-form input:focus {
+  border-color: var(--gold);
+}
+
+.chat-input-form button {
+  background-color: var(--gold);
+  color: #020617;
+  border: none;
+  margin-left: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.chat-input-form button:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    bottom: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    height: 150px; /* smaller on mobile */
+  }
+}

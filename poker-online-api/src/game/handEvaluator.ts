@@ -103,18 +103,43 @@ export function compareHands(a: EvaluatedHand, b: EvaluatedHand): number {
   return 0
 }
 
-// Finds the best possible 5-card hand out of 5-7 cards (2 hole + up to 5 community).
-export function evaluateHand(cards: Card[]): EvaluatedHand {
-  if (cards.length < 5) {
-    throw new Error('evaluateHand requires at least 5 cards')
+// Finds the best possible 5-card hand. For Texas Hold'em, it uses any 5 from hole + community.
+// For Omaha, it strictly uses exactly 2 hole cards and 3 community cards.
+export function evaluateHand(
+  holeCards: Card[],
+  communityCards: Card[],
+  variant: 'texasholdem' | 'omaha' = 'texasholdem'
+): EvaluatedHand {
+  if (communityCards.length < 3) {
+    throw new Error('evaluateHand requires at least 3 community cards')
   }
 
   let best: EvaluatedHand | null = null
-  for (const five of combinations(cards, 5)) {
-    const evaluated = evaluateFive(five)
-    if (!best || compareHands(evaluated, best) > 0) {
-      best = evaluated
+
+  if (variant === 'omaha') {
+    if (holeCards.length !== 4) throw new Error('Omaha requires 4 hole cards')
+    // Omaha: Exactly 2 hole cards + 3 community cards
+    const holeCombos = combinations(holeCards, 2)
+    const commCombos = combinations(communityCards, 3)
+    
+    for (const h of holeCombos) {
+      for (const c of commCombos) {
+        const evaluated = evaluateFive([...h, ...c])
+        if (!best || compareHands(evaluated, best) > 0) {
+          best = evaluated
+        }
+      }
+    }
+  } else {
+    // Texas Hold'em: Any 5 cards from the 7 available
+    const allCards = [...holeCards, ...communityCards]
+    for (const five of combinations(allCards, 5)) {
+      const evaluated = evaluateFive(five)
+      if (!best || compareHands(evaluated, best) > 0) {
+        best = evaluated
+      }
     }
   }
+  
   return best!
 }

@@ -12,6 +12,7 @@ export function LobbyView({ onJoined }: Props) {
   const [connected, setConnected] = useState(socket.connected)
   const [errorMsg, setErrorMsg] = useState('')
   const [maxSeats, setMaxSeats] = useState(6)
+  const [variant, setVariant] = useState<'texasholdem' | 'omaha'>('texasholdem')
   const [turnTimeoutMs, setTurnTimeoutMs] = useState(30_000)
   const [smallBlind, setSmallBlind] = useState(10)
   const [bigBlind, setBigBlind] = useState(20)
@@ -56,22 +57,22 @@ export function LobbyView({ onJoined }: Props) {
 
   function createRoom() {
     setErrorMsg('')
-    socket.emit('create_room', { maxSeats, turnTimeoutMs, smallBlind, bigBlind, defaultStartingChips: startingChips })
+    socket.emit('create_room', { variant, maxSeats, turnTimeoutMs, smallBlind, bigBlind, defaultStartingChips: startingChips })
   }
 
   return (
     <div className="lobby">
-      <h1>♠ Poker Online</h1>
+      <h1>♠ Neto Poker</h1>
 
       <div className="connection-status">
         <span className={connected ? 'dot green' : 'dot red'} />
-        {connected ? 'Connected' : 'Connecting…'}
+        {connected ? 'Conectado' : 'Conectando…'}
       </div>
 
       <div className="name-input">
         <input
           type="text"
-          placeholder="Your name"
+          placeholder="Seu Apelido"
           value={name}
           maxLength={20}
           onChange={(e) => setName(e.target.value)}
@@ -80,10 +81,24 @@ export function LobbyView({ onJoined }: Props) {
       </div>
 
       <div className="room-settings">
-        <h2>Room Settings</h2>
+        <h2>Configurações da Mesa</h2>
 
         <div className="settings-row">
-          <label>Max Players</label>
+          <label>Variante</label>
+          <div className="btn-group">
+            <button
+              className={variant === 'texasholdem' ? 'active' : ''}
+              onClick={() => setVariant('texasholdem')}
+            >Texas Hold'em</button>
+            <button
+              className={variant === 'omaha' ? 'active' : ''}
+              onClick={() => setVariant('omaha')}
+            >Omaha</button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label>Máx. Jogadores</label>
           <div className="btn-group">
             {[2, 3, 4, 5, 6].map((n) => (
               <button
@@ -96,9 +111,9 @@ export function LobbyView({ onJoined }: Props) {
         </div>
 
         <div className="settings-row">
-          <label>Turn Timer</label>
+          <label>Tempo de Turno</label>
           <div className="btn-group">
-            {[{ label: '15s', ms: 15_000 }, { label: '30s', ms: 30_000 }, { label: '60s', ms: 60_000 }, { label: 'Off', ms: 0 }].map(({ label, ms }) => (
+            {[{ label: '15s', ms: 15_000 }, { label: '30s', ms: 30_000 }, { label: '60s', ms: 60_000 }, { label: 'Sem Limite', ms: 0 }].map(({ label, ms }) => (
               <button
                 key={ms}
                 className={turnTimeoutMs === ms ? 'active' : ''}
@@ -131,7 +146,7 @@ export function LobbyView({ onJoined }: Props) {
         </div>
 
         <div className="settings-row">
-          <label>Starting Chips</label>
+          <label>Fichas Iniciais</label>
           <input
             type="number"
             className="settings-num"
@@ -149,21 +164,21 @@ export function LobbyView({ onJoined }: Props) {
           disabled={!trimmed || !connected}
           onClick={createRoom}
         >
-          + Create Room
+          + Criar Mesa
         </button>
       </div>
       {errorMsg && <div className="error-msg">{errorMsg}</div>}
 
       <div className="room-list">
-        <h2>Rooms</h2>
+        <h2>Mesas Abertas</h2>
         {rooms.length === 0 ? (
-          <p className="empty">No rooms yet. Create one!</p>
+          <p className="empty">Nenhuma mesa aberta. Crie a primeira!</p>
         ) : (
           rooms.map((room) => (
             <div key={room.id} className="room-card">
               <div className="room-info">
-                <span className="room-id-short">{room.id.slice(0, 8)}…</span>
-                <span className="room-players">{room.playerCount}/{room.maxSeats} players</span>
+                <span className="room-id-short">Mesa {room.id.slice(0, 5).toUpperCase()}</span>
+                <span className="room-players">{room.playerCount}/{room.maxSeats} jogadores</span>
                 <span className={`status ${room.status}`}>{room.status}</span>
               </div>
               <button
@@ -171,7 +186,7 @@ export function LobbyView({ onJoined }: Props) {
                 disabled={!trimmed || !connected}
                 onClick={() => { setErrorMsg(''); socket.emit('join_room', { roomId: room.id, playerName: trimmed }) }}
               >
-                {room.status === 'playing' ? 'Spectate' : 'Join'}
+                {room.status === 'playing' ? 'Assistir' : 'Entrar'}
               </button>
             </div>
           ))
